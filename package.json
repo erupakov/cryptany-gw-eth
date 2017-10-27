@@ -1,0 +1,24 @@
+{
+  "name": "cryptany-gw-ether",
+  "version": "1.0.0",
+  "description": "Cryptany Ethereum gateway",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: No test specified \" && exit 1"
+  },
+  "keywords": [
+    "Ethereum",
+    "web3",
+    "gateway",
+    "smart",
+    "contract"
+  ],
+  "author": "Eugene Rupakov",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^1.12.1"
+  },
+  "dependencies": {
+    "express": "^4.16.2"
+  }
+}
