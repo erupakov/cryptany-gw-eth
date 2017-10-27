@@ -179,53 +179,47 @@ exports.sendMoney = function (req, res) {
         return;
     }
 
-    web3.eth.getGasPrice()
-        .then(function (val) {
-            gas_Price = web3.utils.toBN(val);
-            console.log('gas price: ' + gas_Price.toString(10));
+    gas_Price = web3.utils.toBN(web3.utils.toWei(22,'gwei'));
+    console.log(data);
 
-            console.log(data);
+    var gas_Limit = web3.utils.toBN(data.gas_limit);
+    var gas_Amount = gas_Price.mul(gas_Limit);
+    var valToTransfer = web3.utils.toBN(data.value).sub(gas_Amount);
 
-            web3.eth.getBalance(account.address)
-                .then(function (data, err) {
-                    console.log('acc data:' + data);
-                    console.log('acc error:' + err);
-                });
+    if (valToTransfer.isNeg()) { // for now, just set it to 0
+        valToTransfer = web3.utils.toBN(0);
+		res.status(403).send('Not enough funds to transfer');
+		res.end();
+		return;
+    }
 
-            var gas_Limit = web3.utils.toBN(data.gas_limit);
-            var gas_Amount = gas_Price.mul(gas_Limit);
-            var valToTransfer = web3.utils.toBN(data.value).sub(gas_Amount);
+    console.log('Sending money: ' + valToTransfer.toString() + "[" + gas_Limit.toString(10) + "]");
 
-            if (valToTransfer.isNeg()) { // for now, just set it to 0
-                valToTransfer = web3.utils.toBN(0);
-            }
-
-            console.log('Sending money: ' + valToTransfer.toString() + "[" + gas_Limit.toString(10) + "]");
-
-            contract.methods.sendMoney(data.toPerson, data.comment, [])
-                .send({
-                    from: account.address,
-                    gas: gas_Limit.toString(10),
-                    value: valToTransfer.toString(10)
-                })
-                .on('transactionHash', function (hash) {
-                    console.log('TxHash:' + hash);
-                    res.send(hash);
-                })
-                .on('confirmation', function (confirmationNumber, receipt) {
-                    console.log('Confirm:' + confirmationNumber + ", rcpt" + receipt);
-                    res.send('confirm:' + confirmationNumber);
-                })
-                .on('receipt', function (receipt) {
-                    // receipt example
-                    console.log('Rcpt:' + receipt);
-                    res.send(receipt);
-                })
-                .on('error', function (error) {
-                    console.log('Error:' + error);
-                    res.status(500).send('Error occured:' + error);
-                }); // If there's an out of gas error the second parameter is the receipt.
-        });
+    contract.methods.sendMoney(data.toPerson, data.comment, [])
+        .send({
+            from: account.address,
+            gas: gas_Limit.toString(10),
+            value: valToTransfer.toString(10)
+        })
+        .on('transactionHash', function (hash) {
+            console.log('TxHash:' + hash);
+			res.send('TxHash:' + hash);
+			res.end();
+        })
+        .on('confirmation', function (confirmationNumber, receipt) {
+            console.log('Confirm:' + confirmationNumber + ", rcpt:");
+			console.log(receipt);
+        })
+        .on('receipt', function (receipt) {
+            // receipt example
+            console.log('Rcpt:');
+			console.log(receipt);
+        })
+        .on('error', function (error) {
+            console.log('Error:' + error);
+			res.status(403).send('Error:' + error);
+			res.end();
+        }); // If there's an out of gas error the second parameter is the receipt.
 }
 
 exports.estimateGas = function (req, res) {
@@ -394,7 +388,6 @@ exports.estimateGas = function (req, res) {
     }
 
     var data = req.body;
-    console.log(data);
 
     // create account from private key
     var account = web3.eth.accounts.privateKeyToAccount('0x' + data.private);
